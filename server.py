@@ -26,8 +26,9 @@ import socketserver
 
 # try: curl -v -X GET http://127.0.0.1:8080/
 # cite later !!!!!!https://stackoverflow.com/questions/60208/replacements-for-switch-statement-in-python
-
+# cite later !!! https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
 import json
+from pathlib import Path, PurePath
 
 __404__ = """<!DOCTYPE html><html>
     <head><title>404 page not found</title></head>
@@ -63,9 +64,19 @@ class MyWebServer(socketserver.BaseRequestHandler):
         }.get(fType, 'error')  
 
     def openFile(self, fileAddr, data):
+        print (fileAddr)
+        reqPath = Path('www'+fileAddr).resolve
+        dirPath = PurePath(Path(__file__).resolve().parent, 'www')
+        print (reqPath in dirPath.parents)
+        if (reqPath not in dirPath.parents):
+            data['header'] = "HTTP/1.1 404 Not Found\r\n"
+            data['payload'] = __404__ 
+            data['content'] = self.content+' text/html; '+self.charset+"\r\n"
+            return 
         if fileAddr.endswith("/"):
             fileAddr += 'index.html'
         try:
+            print ("open")
             file = open('www'+fileAddr, 'r')
             payload= file.read()
             data['payload'] = payload
@@ -88,6 +99,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
         packet =self.parseData()
+        print (packet)
         self.request.sendall(packet.encode())
  
 
