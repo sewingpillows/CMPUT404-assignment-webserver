@@ -44,6 +44,8 @@ def dictToString(data):
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
+    content = "Content-Type:"
+    charset = "charset=utf-8\r\n"
 
     def methodType(self, method):
         return {
@@ -55,15 +57,13 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
 
     def contentType(self, fType):
-        content = "Content-Type:"
-        charset = "charset=utf-8\r\n"
-        #print (fType)
         return {
-            'css': content+' text/css; '+charset,
-            'html': content+' text/html; '+charset,
+            'css': self.content+' text/css; '+self.charset,
+            'html': self.content+' text/html; '+self.charset,
         }.get(fType, 'error')  
 
     def openFile(self, fileAddr, data):
+        print ("open", fileAddr)
         try:
             file = open('www'+fileAddr, 'r')
             payload= file.read()
@@ -71,6 +71,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         except:
             data['header'] = "HTTP/1.1 404 Not Found\r\n"
             data['payload'] = __404__ 
+            data['content'] = self.content+' text/html; '+self.charset+"\r\n"
 
     def parseData(self):
         strData = self.data.decode("utf-8").split('\n')
@@ -78,7 +79,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         if (header):
             data = {}
             data['header'] = self.methodType(header[0])
-            data['content'] = self.contentType(header[1].rsplit('.')[1])+"\r\n"
+            data['content'] = self.contentType(header[1].rsplit('.')[-1])+"\r\n"
             self.openFile(header[1], data)
             return dictToString(data)
 
@@ -86,8 +87,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
         packet =self.parseData()
-        strData = self.data.decode("utf-8").split('\n')
-        header = strData[0].split(' ')
         self.request.sendall(packet.encode())
  
 
