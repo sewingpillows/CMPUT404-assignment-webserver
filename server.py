@@ -53,7 +53,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             'POST': "HTTP/1.1 405 Method Not Allowed\r\n",
             'PUT': "HTTP/1.1 405 Method Not Allowed\r\n",
             'DELETE': "HTTP/1.1 405 Method Not Allowed\r\n"
-        }.get(method, "error")  
+        }.get(method, "HTTP/1.1 405 Method Not Allowed\r\n")  
 
 
     def contentType(self, fType):
@@ -63,7 +63,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
         }.get(fType, 'error')  
 
     def openFile(self, fileAddr, data):
-        print ("open", fileAddr)
+        if fileAddr.endswith("/"):
+            fileAddr += 'index.html'
         try:
             file = open('www'+fileAddr, 'r')
             payload= file.read()
