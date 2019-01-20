@@ -25,14 +25,66 @@ import socketserver
 # run: python freetests.py
 
 # try: curl -v -X GET http://127.0.0.1:8080/
+# cite later !!!!!!https://stackoverflow.com/questions/60208/replacements-for-switch-statement-in-python
+from urllib import request
+from http.client import HTTPResponse
+from enum import Enum     # for enum34, or the stdlib version
+# from aenum import Enum  # for the aenum version
+METHOD = Enum('Method', 'GET POST PUT DELETE')
+STATUS = Enum('Status', '200 404 405')
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
+
+    def methodType(self, method):
+        return {
+            'GET': 'HTTP/1.1 200 ok\r\n',
+            'POST': 'erorr',
+            'PUT': 'error',
+            'DELETE': 'error'
+        }.get(x, 'error')  
+
+
+    def fileType(self, method):
+        content = "Content-Type"
+        charset = "charset=utf-8\r\n"
+        return {
+            'css': content,'text/css; ',charset,
+            'html': content,'html/css; ',charset,
+        }.get(x, 'error')  
+
+    def openFile(self, fileAddr):
+        try:
+            file = open('www'+fileAddr, 'r')
+            return file
+        except:
+            return False
+
+
+    def parseData(self):
+        strData = self.data.decode("utf-8").split('\n')
+        header = strData[0].split(' ')
+        file = self.openFile(header[1])
+        data = "HTTP/1.1 200 OK\r\n"
+        data = "Content-Type:', text/html; charset=utf-8\r\n"
+        return (header[0], header[1])
+
     
     def handle(self):
         self.data = self.request.recv(1024).strip()
-        print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK",'utf-8'))
+        ##print ("Got a request of: %s\n" % self.data)
+        method, fileAddr = self.parseData()
+        print (fileAddr)
+
+        file = open('www'+fileAddr, 'r')
+        data = "HTTP/1.1 200 OK\r\n"
+        data += "Content-Type: text/html; charset=utf-8\r\n"
+        data += "\r\n"
+        data += file.read()
+        self.request.sendall(data.encode())
+
+        ##self.request.sendall(bytearray("OK",'utf-8'))
+ 
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
@@ -40,7 +92,7 @@ if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
     # Create the server, binding to localhost on port 8080
     server = socketserver.TCPServer((HOST, PORT), MyWebServer)
-
+    print ('Started httpserver on port ' , PORT)
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     server.serve_forever()
