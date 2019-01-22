@@ -48,6 +48,12 @@ class MyWebServer(socketserver.BaseRequestHandler):
     content = "Content-Type:"
     charset = "charset=utf-8\r\n"
 
+
+    def create404(self, data):
+        data['header'] = "HTTP/1.1 404 Not Found\r\n"
+        data['payload'] = __404__ 
+        data['content'] = self.content+' text/html; '+self.charset+"\r\n"
+
     def methodType(self, method):
         return {
             'GET': 'HTTP/1.1 200 OK\r\n',
@@ -64,26 +70,25 @@ class MyWebServer(socketserver.BaseRequestHandler):
         }.get(fType, 'error')  
 
     def openFile(self, fileAddr, data):
-        print (fileAddr)
-        reqPath = Path('www'+fileAddr).resolve
-        dirPath = PurePath(Path(__file__).resolve().parent, 'www')
-        print (reqPath in dirPath.parents)
-        if (reqPath not in dirPath.parents):
-            data['header'] = "HTTP/1.1 404 Not Found\r\n"
-            data['payload'] = __404__ 
-            data['content'] = self.content+' text/html; '+self.charset+"\r\n"
-            return 
         if fileAddr.endswith("/"):
             fileAddr += 'index.html'
+        dirPath = PurePath(Path(__file__).resolve().parent, 'www')
+        print (dirPath)
+        reqPath = PurePath(dirPath, fileAddr[1:])
+        print (reqPath)
+        reqPath = (Path(reqPath).resolve())
+        if (dirPath not in reqPath.parents):
+            self.create404(data)
+            return 
+        print (fileAddr)
+
         try:
             print ("open")
             file = open('www'+fileAddr, 'r')
             payload= file.read()
             data['payload'] = payload
         except:
-            data['header'] = "HTTP/1.1 404 Not Found\r\n"
-            data['payload'] = __404__ 
-            data['content'] = self.content+' text/html; '+self.charset+"\r\n"
+            self.create404(data)
 
     def parseData(self):
         strData = self.data.decode("utf-8").split('\n')
