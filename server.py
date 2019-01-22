@@ -64,14 +64,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
 
     def contentType(self, fType):
+        print ("CONTENT YO TYPE", fType)
         return {
             'css': self.content+' text/css; '+self.charset,
             'html': self.content+' text/html; '+self.charset,
         }.get(fType, 'error')  
 
     def openFile(self, fileAddr, data):
-        if fileAddr.endswith("/"):
-            fileAddr += 'index.html'
+        print ("FILLLLL", fileAddr)
         dirPath = PurePath(Path(__file__).resolve().parent, 'www')
         print (dirPath)
         reqPath = PurePath(dirPath, fileAddr[1:])
@@ -89,15 +89,23 @@ class MyWebServer(socketserver.BaseRequestHandler):
             data['payload'] = payload
         except:
             self.create404(data)
+    def indexFix(self, fl):
+        if fl.endswith("/"):
+            fl+= 'index.html'
+        return fl
+
 
     def parseData(self):
         strData = self.data.decode("utf-8").split('\n')
+        print ("COTENT TYPE before split",strData)
         header = strData[0].split(' ')
+        print ("COTENT TYPE AFTER split",header)
         if (header):
             data = {}
+            fileAddr = self.indexFix(header[1])
             data['header'] = self.methodType(header[0])
-            data['content'] = self.contentType(header[1].rsplit('.')[-1])+"\r\n"
-            self.openFile(header[1], data)
+            data['content'] = self.contentType(fileAddr.rsplit('.')[-1])+"\r\n"
+            self.openFile(fileAddr , data)
             return dictToString(data)
 
     
