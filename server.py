@@ -23,11 +23,26 @@ import socketserver
 # http://docs.python.org/2/library/socketserver.html
 #
 # run: python freetests.py
-
 # try: curl -v -X GET http://127.0.0.1:8080/
-# cite later !!!!!!https://stackoverflow.com/questions/60208/replacements-for-switch-statement-in-python
-# cite later !!! https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
-import json
+
+###########################
+# **********
+# Citations
+# **********
+#
+# stackoverflow
+# Replacements for switch statement in Python?
+# URL: https://stackoverflow.com/questions/60208/replacements-for-switch-statement-in-python
+# Answer: https://stackoverflow.com/a/103081
+# Author: Nick - https://stackoverflow.com/users/3233/nick
+#
+# stackoverflow
+# Python: Get relative path from comparing two absolute paths
+# URL: https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
+# Answer: https://stackoverflow.com/a/34468328
+# Author: Jeremy Cochoy - https://stackoverflow.com/users/2535207/jeremy-cochoy
+###########################
+
 from pathlib import Path, PurePath
 
 __404__ = """<!DOCTYPE html><html>
@@ -68,6 +83,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.response['payload'] = payload
         self.response['content'] = self.content+self.contentType(method)+self.charset+"\r\n"
     
+    # Handles the response packet depending on METHOD
     def methodType(self, header):
         method = header[0].strip(' ')
         fileAddr = self.indexFix(header[1])
@@ -76,12 +92,16 @@ class MyWebServer(socketserver.BaseRequestHandler):
         else:
             return self.create405()
 
+    #Returns the correct mime type for the data
     def contentType(self, fType):
         return {
             'css': 'text/css;',
             'html': 'text/html;',
         }.get(fType, 'error')  
 
+    #opens file with two checks:
+    # 1) Issues 404 if file can not be opened
+    # 2) Issue 404 if file is not located in www
     def openFile(self, fileAddr):
         dirPath = PurePath(Path(__file__).resolve().parent, 'www')
         reqPath = PurePath(dirPath, fileAddr[1:])
@@ -96,7 +116,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         except:
             self.create404()
 
-
+    #will append index if dealing with a root 
     def indexFix(self, fileName):
         if fileName.endswith("/"):
             fileName += 'index.html'
