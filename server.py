@@ -34,6 +34,9 @@ __404__ = """<!DOCTYPE html><html>
     <head><title>404 page not found</title></head>
     <body><h1>404 page not found</h1></body></html>"""
 
+__405__ = """<!DOCTYPE html><html>
+    <head><title>405 error</title></head>
+    <body><h1>405 - METHOD NOT ALLOWED</h1></body></html>"""
     
 def dictToString(data):
     packet = data['header']
@@ -47,73 +50,68 @@ def dictToString(data):
 class MyWebServer(socketserver.BaseRequestHandler):
     content = "Content-Type:"
     charset = "charset=utf-8\r\n"
+    response ={}
 
 
-    def create404(self, data):
-        data['header'] = "HTTP/1.1 404 Not Found\r\n"
-        data['payload'] = __404__ 
-        data['content'] = self.content+' text/html; '+self.charset+"\r\n"
+    def create404(self):
+        self.response['header'] = "HTTP/1.1 404 Not Found\r\n"
+        self.response['payload'] = __404__ 
+        self.response['content'] = self.content+' text/html; '+self.charset+"\r\n"
 
-    def methodType(self, method):
-        return {
-            'GET': 'HTTP/1.1 200 OK\r\n',
-            'POST': "HTTP/1.1 405 Method Not Allowed\r\n",
-            'PUT': "HTTP/1.1 405 Method Not Allowed\r\n",
-            'DELETE': "HTTP/1.1 405 Method Not Allowed\r\n"
-        }.get(method, "HTTP/1.1 405 Method Not Allowed\r\n")  
+    def create405(self):
+        self.response['header'] = "HTTP/1.1 405 Method Not Allowed\r\n"
+        self.response['payload'] = __405__ 
+        self.response['content'] = self.content+' text/html; '+self.charset+"\r\n"
 
+    def create200(self, method, payload):
+        self.response['header'] = "HTTP/1.1 200 OK\r\n"
+        self.response['payload'] = payload
+        self.response['content'] = self.content+self.contentType(method)+self.charset+"\r\n"
+    
+    def methodType(self, header):
+        method = header[0].strip(' ')
+        fileAddr = self.indexFix(header[1])
+        if (method == "GET"):
+            return self.openFile(fileAddr)
+        else:
+            return self.create405()
 
     def contentType(self, fType):
-        print ("CONTENT YO TYPE", fType)
         return {
-            'css': self.content+' text/css; '+self.charset,
-            'html': self.content+' text/html; '+self.charset,
+            'css': 'text/css;',
+            'html': 'text/html;',
         }.get(fType, 'error')  
 
-    def openFile(self, fileAddr, data):
-        print ("FILLLLL", fileAddr)
+    def openFile(self, fileAddr):
         dirPath = PurePath(Path(__file__).resolve().parent, 'www')
-        print (dirPath)
         reqPath = PurePath(dirPath, fileAddr[1:])
-        print (reqPath)
         reqPath = (Path(reqPath).resolve())
         if (dirPath not in reqPath.parents):
-            self.create404(data)
+            self.create404()
             return 
-        print (fileAddr)
-
         try:
-            print ("open")
             file = open('www'+fileAddr, 'r')
             payload= file.read()
-            data['payload'] = payload
+            self.create200(fileAddr.rsplit('.')[-1] , payload)
         except:
-            self.create404(data)
-    def indexFix(self, fl):
-        if fl.endswith("/"):
-            fl+= 'index.html'
-        return fl
+            self.create404()
 
 
-    def parseData(self):
-        strData = self.data.decode("utf-8").split('\n')
-        print ("COTENT TYPE before split",strData)
-        header = strData[0].split(' ')
-        print ("COTENT TYPE AFTER split",header)
-        if (header):
-            data = {}
-            fileAddr = self.indexFix(header[1])
-            data['header'] = self.methodType(header[0])
-            data['content'] = self.contentType(fileAddr.rsplit('.')[-1])+"\r\n"
-            self.openFile(fileAddr , data)
-            return dictToString(data)
+    def indexFix(self, fileName):
+        if fileName.endswith("/"):
+            fileName += 'index.html'
+        return fileName
 
-    
+
     def handle(self):
         self.data = self.request.recv(1024).strip()
-        packet =self.parseData()
-        print (packet)
-        self.request.sendall(packet.encode())
+        strData = self.data.decode("utf-8").split('\n')
+        header = strData[0].split(' ')
+        if (header):
+            self.methodType(header)
+            packet = dictToString(self.response)
+            self.request.sendall(packet.encode())
+            self.response = {}
  
 
 if __name__ == "__main__":
@@ -122,7 +120,7 @@ if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
     # Create the server, binding to localhost on port 8080
     server = socketserver.TCPServer((HOST, PORT), MyWebServer)
-    print ('Started httpserver on port ' , PORT)
+    #print ('Started httpserver on port ' , PORT)
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     server.serve_forever()
