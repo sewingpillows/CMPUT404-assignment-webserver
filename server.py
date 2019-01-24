@@ -105,6 +105,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def openFile(self, fileAddr):
         dirPath = PurePath(Path(__file__).resolve().parent, 'www')
         reqPath = PurePath(dirPath, fileAddr[1:])
+        if not (Path(reqPath).exists()):
+            self.create404()
+            return 
         reqPath = (Path(reqPath).resolve())
         if (dirPath not in reqPath.parents):
             self.create404()
