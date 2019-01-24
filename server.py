@@ -53,7 +53,6 @@ __405__ = """<!DOCTYPE html><html>
     <head><title>405 error</title></head>
     <body><h1>405 - METHOD NOT ALLOWED</h1></body></html>"""
 
-
 def dictToString(data):
     packet = data['header']+"\r\n"
     if data.get('location'):
@@ -63,8 +62,6 @@ def dictToString(data):
     if data.get('payload'):
         packet += data['payload']
     return packet
-
-
 
 class MyWebServer(socketserver.BaseRequestHandler):
     response ={}
@@ -91,11 +88,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
     # Handles the response packet depending on METHOD
     def methodType(self, header):
         method = header[0].strip(' ')
-        if (self.redirect(header[1])):
-            print ("CREATE 301")
-            return self.create301(header[1])
-        fileAddr = self.indexFix(header[1])
         if (method == "GET"):
+            fileAddr = self.indexFix(header[1])
             return self.openFile(fileAddr)
         else:
             return self.create405()
@@ -108,22 +102,17 @@ class MyWebServer(socketserver.BaseRequestHandler):
         }.get(fType, 'text/plain')  
 
     #opens file with two checks:
-    # 1) Issues 404 if file can not be opened
-    # 2) Issue 404 if file is not located in www
+    # 1) Issues 404 if file can not be opened or not in 404
+    # 2) Issue 301 if file requires redirect
     def openFile(self, fileAddr):
-        print ("CREATE OPEN")
-        dirPath = PurePath(Path(__file__).resolve().parent, 'www')
-        reqPath = PurePath(dirPath, fileAddr[1:])
-        if not (Path(reqPath).exists()):
-            print (reqPath)
-            #print ("FAILS AT PATHCONTRAO")
+        ## test path is real
+        if not (self.allowedPath(fileAddr)):
             self.create404()
             return 
-        reqPath = (Path(reqPath).resolve())
-        if (dirPath not in reqPath.parents):
-            print ("FAILS AT PATH2")
-            self.create404()
-            return 
+        ##test redirect
+        if (self.redirect(fileAddr)):
+            self.create301(fileAddr)
+            return
         try:
             file = open('www'+fileAddr, 'r')
             payload= file.read()
@@ -133,25 +122,25 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
     #test if a redirect is necessary, (if not file)
     def redirect(self, filename):
-        dirPath = PurePath(Path(__file__).resolve().parent, 'www')
-        print (dirPath)
-        print (filename)
-        reqPath = PurePath(dirPath, filename[1:])
-        print (reqPath)
-        if not (Path(reqPath).exists()):
-            return False
-        reqPath = (Path(reqPath).resolve())
-        if (dirPath not in reqPath.parents):
-            return False
         if (len(filename.split('.'))==1 and filename[-1] != "/"):
             return True
         return False
+    
+    def allowedPath(self, fileAddr):
+        dirPath = PurePath(Path(__file__).resolve().parent, 'www')
+        reqPath = PurePath(dirPath, fileAddr[1:])
+        if not (Path(reqPath).exists()):
+            return False
+        reqPath = (Path(reqPath).resolve())
+        ##test in parents
+        if (dirPath not in reqPath.parents):
+            return False
+        return True
 
     #will append index if dealing with a root 
     def indexFix(self, fileName):
-        if fileName.endswith("/"):
+        if (fileName[-1] == ("/")):
             fileName += 'index.html'
-
         return fileName
 
 
@@ -159,11 +148,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         strData = self.data.decode("utf-8").split('\n')
         header = strData[0].split(' ')
-        print ("HEADER", header)
         if (header):
             self.methodType(header)
             packet = dictToString(self.response)
-            print (packet)
             self.request.sendall(packet.encode())
             self.response.clear()
  
