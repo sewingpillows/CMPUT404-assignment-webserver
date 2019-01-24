@@ -123,6 +123,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def indexFix(self, fileName):
         if fileName.endswith("/"):
             fileName += 'index.html'
+        if (len(fileName.split('.')) == 1):
+            fileName+='/index.html'
         return fileName
 
 
