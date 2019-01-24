@@ -1,8 +1,6 @@
-#  coding: utf-8 
-import socketserver
-
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos
-# 
+# Copyright 2019 Allison Boukall with socket and framework by Abram Hindle, Eddie Antonio Santos
+#  Allison Boukall - 404 Assignment 1 submission
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -25,11 +23,8 @@ import socketserver
 # run: python freetests.py
 # try: curl -v -X GET http://127.0.0.1:8080/
 
-###########################
-# **********
-# Citations
-# **********
-#
+############################
+# Sources
 # stackoverflow
 # Replacements for switch statement in Python?
 # URL: https://stackoverflow.com/questions/60208/replacements-for-switch-statement-in-python
@@ -42,7 +37,7 @@ import socketserver
 # Answer: https://stackoverflow.com/a/34468328
 # Author: Jeremy Cochoy - https://stackoverflow.com/users/2535207/jeremy-cochoy
 ###########################
-
+import socketserver
 from pathlib import Path, PurePath
 
 __404__ = """<!DOCTYPE html><html>
